@@ -1,12 +1,13 @@
-mod models;
+mod model;
 mod utils;
+
 use crate::{
     utils::{
         AccountId,
         ONE_NEAR,
         assert_self, assert_single_promise_success,
     },
-    models::{
+    model::{
         Crowdfund,
         Donation
     }
@@ -41,7 +42,7 @@ impl Contract{
             donations
         }
     }
-}
+
 
 pub fn add_crowdfund(&mut self, title: String, donate: u128, description: String) {
 
@@ -56,7 +57,7 @@ pub fn add_crowdfund(&mut self, title: String, donate: u128, description: String
     env::log("Added a new crowdfund".as_bytes());
 }
 
-pub fn list_crowdfunds(&self) -> Vec<Crowdfund> {
+pub fn list_crowdfunds(&mut self) -> Vec<Crowdfund> {
     assert_self();
     let crowdfunds = &self.crowdfunds;
     return crowdfunds.to_vec();
@@ -67,12 +68,13 @@ pub fn add_vote(&mut self, id:usize) {
     let voter = env::predecessor_account_id();
     crowdfund.total_votes = crowdfund.total_votes + 1;
     env::log("Vote submitted successfully".as_bytes());
-    crowdfund.votes.push(voter);
+    crowdfund.votes.push(voter.to_string());
 }
 
 pub fn add_donation(&mut self, id:usize, amount:u128) {
     let transfer_amount: u128 = ONE_NEAR * amount;
-    let crowdfund.total_donations = crowdfund.total_donations + transfer_amount;
+    let crowdfund: &mut Crowdfund = self.crowdfunds.get_mut(id).unwrap();
+    crowdfund.total_donations = crowdfund.total_donations + transfer_amount;
     self.donations.push(Donation::new());
 
     Promise::new(env::predecessor_account_id()).transfer(transfer_amount);
@@ -86,4 +88,5 @@ pub fn crowdfund_count(&mut self) -> usize {
 pub fn get_total_donations(&mut self, id:usize) -> u128 {
     let crowdfund: &mut Crowdfund = self.crowdfunds.get_mut(id).unwrap();
     return crowdfund.total_donations;
+}
 }

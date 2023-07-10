@@ -1,4 +1,4 @@
-use near_sdk::borsh::{sekf, BorshDeserialize, BorshSerialize};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 #[allow(unused_imports)]
 use near_sdk::{env, near_bindgen};
 use near_sdk::serde::{Deserialize, Serialize};
@@ -28,7 +28,7 @@ impl Crowdfund { // initialization of Crowdfund
     pub fn new(id: i32, title: String, donation_target: u128, description: String) -> Self {
         Crowdfund {
             id,
-            creator: env::signer_account_id(),
+            creator: env::signer_account_id().to_string(),
             created_at: env::block_timestamp(),
             title,
             donation_target,
@@ -51,7 +51,7 @@ impl Donation {
     pub fn new() -> Self {
         Donation {
             amount: env::attached_deposit(),
-            donot: env::predecessor_account_id(),
+            donor: env::predecessor_account_id().to_string(),
         }
     }
 }

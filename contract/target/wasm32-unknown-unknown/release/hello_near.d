@@ -1,0 +1,1 @@
+/Users/beyzaerfidan/Desktop/near/crowdfundDapp/contract/target/wasm32-unknown-unknown/release/hello_near.wasm: /Users/beyzaerfidan/Desktop/near/crowdfundDapp/contract/src/lib.rs /Users/beyzaerfidan/Desktop/near/crowdfundDapp/contract/src/model.rs /Users/beyzaerfidan/Desktop/near/crowdfundDapp/contract/src/utils.rs
