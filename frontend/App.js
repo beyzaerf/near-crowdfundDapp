@@ -1,75 +1,70 @@
-import 'regenerator-runtime/runtime';
-import React from 'react';
-
-import './assets/global.css';
-
-import { EducationalText, SignInPrompt, SignOutButton } from './ui-components';
-
-
-export default function App({ isSignedIn, contractId, wallet }) {
-  const [valueFromBlockchain, setValueFromBlockchain] = React.useState();
-
-  const [uiPleaseWait, setUiPleaseWait] = React.useState(true);
-
-  // Get blockchian state once on component load
-  React.useEffect(() => {
-    getGreeting()
-      .then(setValueFromBlockchain)
-      .catch(alert)
-      .finally(() => {
-        setUiPleaseWait(false);
-      });
-    }
-  , []);
-
-  /// If user not signed-in with wallet - show prompt
-  if (!isSignedIn) {
-    // Sign-in flow will reload the page later
-    return <SignInPrompt greeting={valueFromBlockchain} onClick={() => wallet.signIn()}/>;
-  }
-
-  function changeGreeting(e) {
-    e.preventDefault();
-    setUiPleaseWait(true);
-    const { greetingInput } = e.target.elements;
+import 'regenerator-runtime/runtime'
+    import { useEffect, useState } from 'react'
+    import ListCrowdfunds from './components/ListCrowdfunds'
+    import CreateCrowdfund from './components/CreateCrowdfunds'
+    import React from 'react'
+    import { login, logout } from './utils'
+    import './global.css'
+    import getConfig from './config'
+    const { networkId } = getConfig(process.env.NODE_ENV || 'development')
     
-    // use the wallet to send the greeting to the contract
-    wallet.callMethod({ method: 'set_greeting', args: { message: greetingInput.value }, contractId })
-      .then(async () => {return getGreeting();})
-      .then(setValueFromBlockchain)
-      .finally(() => {
-        setUiPleaseWait(false);
-      });
-  }
-
-  function getGreeting(){
-    // use the wallet to query the contract's greeting
-    return wallet.viewMethod({ method: 'get_greeting', contractId })
-  }
-
-  return (
-    <>
-      <SignOutButton accountId={wallet.accountId} onClick={() => wallet.signOut()}/>
-      <main className={uiPleaseWait ? 'please-wait' : ''}>
-        <h1>
-          The contract says: <span className="greeting">{valueFromBlockchain}</span>
-        </h1>
-        <form onSubmit={changeGreeting} className="change">
-          <label>Change greeting:</label>
-          <div>
-            <input
-              autoComplete="off"
-              defaultValue={valueFromBlockchain}
-              id="greetingInput"
-            />
-            <button>
-              <span>Save</span>
-              <div className="loader"></div>
+    export default function App() {
+      const [crowdfunds, setCrowdfunds] = useState([])
+      const [toggleModal, setToggleModal] = useState(false)
+      function addProject() {
+        setToggleModal(!toggleModal)
+      }
+    
+      useEffect(
+        () => {
+          // in this case, we only care to query the contract when signed in
+          if (window.walletConnection.isSignedIn()) {
+            // window.contract is set by initContract in index.js
+            window.contract.list_crowdfunds().then((crowdfundprojects) => {
+              const crowdfundList = [...crowdfundprojects]
+              setCrowdfunds(crowdfundList)
+            })
+          }
+        },
+        [],
+      )
+    
+      // if not signed in, return early with sign-in prompt
+      if (!window.walletConnection.isSignedIn()) {
+        return (
+          <main>
+            <h1>Welcome to Paradis</h1>
+            <p style={{ textAlign: 'center' }}>
+              Click the button below to sign in:
+            </p>
+            <p style={{ textAlign: 'center', marginTop: '2.5em' }}>
+              <button onClick={login}>Sign in</button>
+            </p>
+          </main>
+        )
+      }
+      return (
+        // use React Fragment, <>, to avoid wrapping elements in unnecessary divs
+        <>
+          <header>
+            <div className="logo"></div>
+            <button className="link" style={{ float: 'right' }} onClick={logout}>
+              Sign out <span className="id">{window.accountId}</span>
             </button>
-          </div>
-        </form>
-        <EducationalText/>
-      </main>
-    </>
-  );
-}
+          </header>
+          <button onClick={addProject}>Add a project</button>
+          <main>
+            <CreateCrowdfund toggleModal={toggleModal} />
+            <section>
+              {crowdfunds.map((project, id) => {
+                return (
+                  <div key={id}>
+                    <ListCrowdfunds project={project} />
+                  </div>
+                )
+              })}
+            </section>
+          </main>
+        </>
+      )
+    }
