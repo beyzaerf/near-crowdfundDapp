@@ -1,64 +1,89 @@
-// Find all our documentation at https://docs.near.org
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{log, near_bindgen};
+mod models;
+mod utils;
+use crate::{
+    utils::{
+        AccountId,
+        ONE_NEAR,
+        assert_self, assert_single_promise_success,
+    },
+    models::{
+        Crowdfund,
+        Donation
+    }
+};
 
-// Define the default message
-const DEFAULT_MESSAGE: &str = "Hello";
+// To conserve gas, efficient serialization is achieved through Borsh
+use near_sdk::{borsh::{self, BorshDeserialize, BorshSerialize}, Promise};
+#[allow(unused_imports)]
+use near_sdk::{env, PromiseIndex, near_bindgen};
+near_sdk::setup_alloc!();
 
-// Define the contract structure
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Default, BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    message: String,
+    owner: AccountId,
+    crowdfunds: Vec<Crowdfund>,
+    donations: Vec<Donation>,
 }
 
-// Define the default, which automatically initializes the contract
-impl Default for Contract{
-    fn default() -> Self{
-        Self{message: DEFAULT_MESSAGE.to_string()}
-    }
-}
-
-// Implement the contract structure
 #[near_bindgen]
-impl Contract {
-    // Public method - returns the greeting saved, defaulting to DEFAULT_MESSAGE
-    pub fn get_greeting(&self) -> String {
-        return self.message.clone();
-    }
+impl Contract{
+    #[init]
+    pub fn init( // custom init
+        owner: AccountId,
+    ) -> Self{
+        let crowdfunds: Vec<Crowdfund> = Vec::new();
+        let donations: Vec<Donation> = Vec::new();
 
-    // Public method - accepts a greeting, such as "howdy", and records it
-    pub fn set_greeting(&mut self, message: String) {
-        log!("Saving greeting {}", message);
-        self.message = message;
+        Contract{
+            owner, 
+            crowdfunds,
+            donations
+        }
     }
 }
 
-/*
- * The rest of this file holds the inline tests for the code above
- * Learn more about Rust tests: https://doc.rust-lang.org/book/ch11-01-writing-tests.html
- */
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub fn add_crowdfund(&mut self, title: String, donate: u128, description: String) {
 
-    #[test]
-    fn get_default_greeting() {
-        let contract = Contract::default();
-        // this test did not call set_greeting so should return the default "Hello" greeting
-        assert_eq!(
-            contract.get_greeting(),
-            "Hello".to_string()
-        );
-    }
+    let id = self.crowdfunds.len() as i32;
 
-    #[test]
-    fn set_then_get_greeting() {
-        let mut contract = Contract::default();
-        contract.set_greeting("howdy".to_string());
-        assert_eq!(
-            contract.get_greeting(),
-            "howdy".to_string()
-        );
-    }
+    self.crowdfunds.push(Crowdfund::new(
+        id,
+        title,
+        donate,
+        description
+    ));
+    env::log("Added a new crowdfund".as_bytes());
+}
+
+pub fn list_crowdfunds(&self) -> Vec<Crowdfund> {
+    assert_self();
+    let crowdfunds = &self.crowdfunds;
+    return crowdfunds.to_vec();
+}
+
+pub fn add_vote(&mut self, id:usize) {
+    let crowdfund: &mut Crowdfund = self.crowdfunds.get_mut(id).unwrap();
+    let voter = env::predecessor_account_id();
+    crowdfund.total_votes = crowdfund.total_votes + 1;
+    env::log("Vote submitted successfully".as_bytes());
+    crowdfund.votes.push(voter);
+}
+
+pub fn add_donation(&mut self, id:usize, amount:u128) {
+    let transfer_amount: u128 = ONE_NEAR * amount;
+    let crowdfund.total_donations = crowdfund.total_donations + transfer_amount;
+    self.donations.push(Donation::new());
+
+    Promise::new(env::predecessor_account_id()).transfer(transfer_amount);
+    env::log("You have donated successfully".as_bytes());
+}
+
+pub fn crowdfund_count(&mut self) -> usize {
+    return self.crowdfunds.len();
+}
+
+pub fn get_total_donations(&mut self, id:usize) -> u128 {
+    let crowdfund: &mut Crowdfund = self.crowdfunds.get_mut(id).unwrap();
+    return crowdfund.total_donations;
 }
